@@ -20,8 +20,7 @@ class driver #(parameter int BITS = 1, parameter int DRVRS = 4, parameter int PC
         vif.reset = 1;
         vif.pndng = 0;
         vif.D_pop = '0;
-        repeat(2);
-        @(posedge vif.clk);
+        repeat(2) @(posedge vif.clk);
         vif.reset = 0;
 
         forever begin
@@ -31,18 +30,18 @@ class driver #(parameter int BITS = 1, parameter int DRVRS = 4, parameter int PC
             if (agent_drv_mbx.try_get(seq_item)) begin
                 $info("[%0t] Driver [%0d] received transaction %0d", $time, driver_id, seq_item.id);
                     
-                    repeat(seq.item.gap) @(posedge vif.clk); // Insert delay of the seq item
+                    repeat(seq_item.gap) @(posedge vif.clk); // Delay of the seq item
                     vif.D_pop = seq_item.packet;
                     vif.pndng = 1;
 
-                    do @(posedge vif.clk); // Hold seq_item.packet in D_pop until the DUT takes D_pop
+                    do @(posedge vif.clk); // Hold seq_item.packet until the DUT takes it
                     while (!vif.pop);
                     vif.pndng = 0;
                     vif.D_pop = '0;
-                    ->drv_done; // Now Agent can sent the next seq item
+                    ->drv_done; // Agent can send the next seq item
             end
             else begin
-                $info("[%0t] Driver [%0d] waiting for a transaction %0d", $time, driver_id, seq_item.id);
+                $info("[%0t] Driver [%0d] waiting for a transaction", $time, driver_id);
                     vif.pndng = 0;
                     vif.D_pop = 0;
             end
