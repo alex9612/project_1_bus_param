@@ -3,16 +3,8 @@
 # RTL source
 mkdir -p rtl
 
-# Verification environment
-mkdir -p tb/common
-mkdir -p tb/interfaces
-mkdir -p tb/agent
-mkdir -p tb/checking
-mkdir -p tb/coverage
-mkdir -p tb/assertions
-mkdir -p tb/environment
-mkdir -p tb/tests
-mkdir -p tb/top
+# Verification environment: source files live directly in tb.
+mkdir -p tb
 
 # Simulation infrastructure
 mkdir -p sim/scripts
