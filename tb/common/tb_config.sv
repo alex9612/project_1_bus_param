@@ -2,33 +2,19 @@
 class TbConfig(parameter int BITS = 1, parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                 parameter bit [7:0] BROADCAST_CODE = 8'hFF, parameter int MAX_DEVICES = 10);
 
-    // --------------------------------------------------
-    // DUT / elaboration configuration
-    // Runtime copies of the parameters above
-    // --------------------------------------------------
-
+    // DUT elaboration config
     int unsigned num_buses;
     int unsigned num_devices;
     int unsigned packet_size;
-
     bit [7:0] broadcast_code;
 
     // FIFO configuration
     rand int unsigned fifo_depth;
-
     int unsigned min_fifo_depth;
     int unsigned max_fifo_depth;
 
-    // Traffic generation configuration
-    int unsigned min_delay;
-    int unsigned max_delay;
-
-    int unsigned min_transactions;
-    int unsigned max_transactions;
-
     // Simulation control
     int unsigned timeout_cycles;
-
 
     // Constraints
     constraint fifo_depth_c {
@@ -37,31 +23,16 @@ class TbConfig(parameter int BITS = 1, parameter int DRVRS = 4, parameter int PC
     }
 
     function new();
-
-        // Copy elaboration-time parameters
         num_buses      = BITS;
         num_devices    = DRVRS;
         packet_size    = PCKG_SZ;
         broadcast_code = BROADCAST_CODE;
 
-        // Default FIFO configuration
-        //
-        // By default min == max, so fifo_depth is effectively
-        // fixed. A test can modify this range before randomizing
-        // the configuration.
+        // Equal limits keep the depth fixed until a test changes them.
         min_fifo_depth = 16;
         max_fifo_depth = 16;
         fifo_depth     = 16;
 
-        // Default transaction delay range
-        min_delay = 0;
-        max_delay = 20;
-
-        // Default number of transactions generated per device
-        min_transactions = 3;
-        max_transactions = 100;
-
-        // Maximum simulation time before declaring a timeout
         timeout_cycles = 100000;
 
     endfunction
@@ -69,78 +40,36 @@ class TbConfig(parameter int BITS = 1, parameter int DRVRS = 4, parameter int PC
     // Configuration validation
     function void validate();
 
-        if (BITS < 1) begin
-            $fatal(1,
-                "[TbConfig] BITS must be greater than or equal to 1."
-            );
-        end
+        if (BITS != 1)
+            $fatal(1, "[TbConfig] This environment uses exactly one bus.");
 
-        if (DRVRS < 1) begin
-            $fatal(1,
-                "[TbConfig] DRVRS must be greater than or equal to 1."
-            );
-        end
+        if (DRVRS < 2)
+            $fatal(1, "[TbConfig] DRVRS must be at least 2 for unicast traffic.");
 
-        if (DRVRS > MAX_DEVICES) begin
-            $fatal(1,
-                "[TbConfig] DRVRS (%0d) exceeds MAX_DEVICES (%0d).",
-                DRVRS,
-                MAX_DEVICES
-            );
-        end
+        if (DRVRS > MAX_DEVICES)
+            $fatal(1, "[TbConfig] DRVRS (%0d) exceeds MAX_DEVICES (%0d).", DRVRS, MAX_DEVICES);
 
-        if (PCKG_SZ < 9) begin
-            $fatal(1,
-                "[TbConfig] PCKG_SZ must be at least 9 bits."
-            );
-        end
+        if ((PCKG_SZ != 16) && (PCKG_SZ != 32) && (PCKG_SZ != 64))
+            $fatal(1, "[TbConfig] PCKG_SZ must be 16, 32 or 64 bits.");
 
-        if (min_fifo_depth < 1) begin
-            $fatal(1,
-                "[TbConfig] min_fifo_depth must be greater than 0."
-            );
-        end
+        if (PCKG_SZ < 9)
+            $fatal(1, "[TbConfig] PCKG_SZ must be at least 9 bits.");
 
-        if (min_fifo_depth > max_fifo_depth) begin
-            $fatal(1,
-                "[TbConfig] min_fifo_depth cannot be greater than max_fifo_depth."
-            );
-        end
+        if (min_fifo_depth < 1)
+            $fatal(1, "[TbConfig] min_fifo_depth must be greater than 0.");
 
-        if (fifo_depth < min_fifo_depth ||
-            fifo_depth > max_fifo_depth) begin
+        if (min_fifo_depth > max_fifo_depth)
+            $fatal(1, "[TbConfig] min_fifo_depth cannot be greater than max_fifo_depth.");
+        
+        if (fifo_depth < min_fifo_depth || fifo_depth > max_fifo_depth) 
+            $fatal(1, "[TbConfig] fifo_depth (%0d) is outside the allowed range [%0d:%0d].", fifo_depth, min_fifo_depth, max_fifo_depth);
 
-            $fatal(1,
-                "[TbConfig] fifo_depth (%0d) is outside the allowed range [%0d:%0d].",
-                fifo_depth,
-                min_fifo_depth,
-                max_fifo_depth
-            );
-        end
-
-        if (min_delay > max_delay) begin
-            $fatal(1,
-                "[TbConfig] min_delay cannot be greater than max_delay."
-            );
-        end
-
-        if (min_transactions > max_transactions) begin
-            $fatal(1,
-                "[TbConfig] min_transactions cannot be greater than max_transactions."
-            );
-        end
-
-        if (timeout_cycles == 0) begin
-            $fatal(1,
-                "[TbConfig] timeout_cycles must be greater than 0."
-            );
-        end
-
+        if (timeout_cycles == 0) 
+            $fatal(1, "[TbConfig] timeout_cycles must be greater than 0.");
+        
     endfunction
 
-
     function void print();
-
         $display("");
         $display("------------- TESTBENCH CONFIGURATION -------------");
         $display("BITS                  = %0d", num_buses);
@@ -163,7 +92,6 @@ class TbConfig(parameter int BITS = 1, parameter int DRVRS = 4, parameter int PC
 
         $display("----------------------------------------------------");
         $display("");
-
     endfunction
 
 endclass
