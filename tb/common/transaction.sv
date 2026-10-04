@@ -72,3 +72,65 @@ class Transaction #(parameter int PCKG_SZ = 16, parameter int MAX_DEVICES = 10);
     endfunction
 
 endclass
+
+// From the test to the generator
+// In test, the handler for a trans_test will be called "request;"
+class trans_test;
+    int packets_min;
+    int packets_max;
+
+    // How many transactions, of total trans, are broadcast
+    // Value between 0 and 1.
+    int broadcast_weight;
+
+    // Delay inserted between seq items in gaps
+    int min_gap;
+    int max_gap;
+
+    function void validate();
+        if (packet_min > packets_max)
+            $fatal(1, "[%0t] trans_test: packets_min exceds packets_max", $time);
+        if (min_gap > max_gap)
+            $fatal(1, "[%0t] trans_test: packets_min exceds packets_max", $time);
+        if (broadcast_weight == 1)
+            $info("[%0t] trans_test: BROADCAST only mode configured", $time);
+        if (broadcast_weight == 0)
+            $info("[%0t] trans_test: UNICAST only mode configured", $time);
+        if (max_gap - min_gap == 0)
+            $info("[%0t] trans_test: Burst mode configured", $time);
+    endfunction
+
+endclass
+
+class trans_gen #();
+    int id;
+    int source;
+    rand bit [7:0] destination;
+    rand payload
+
+endclass
+
+class trans_drv #();
+
+
+
+endclass
+
+class trans_mon #();
+
+
+
+endclass
+
+class trans_gen #();
+
+
+
+endclass
+
+class trans_sb #();
+
+
+
+endclass
+
