@@ -38,13 +38,14 @@ class generator #(parameter int DRVRS   = 4, parameter int PCKG_SZ = 16, paramet
         for (int unsigned i = 0; i < request.total_trans; i++) begin
             trans = new(i);
 
+            // delay is not being applied here, it will be inserted on drivers
             if (!trans.randomize() with {
                 gap inside {[local::min_gap:local::max_gap]};
                 broadcast dist {1'b1 := local::broadcast_pct,
                                 1'b0 := local::unicast_pct};
             })
                 $fatal(1, "[%0t] generator: randomization failed for transaction %0d", $time, i);
-                
+
             // The next section can be improved later -- check later // PAYLOAD_RANDOM is default
             if (request.payload_mode == PAYLOAD_SWITCHING) begin
                 if (i % 4 == 0)
