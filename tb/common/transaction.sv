@@ -83,14 +83,10 @@ typedef enum {
 // In test, the handler for a trans_test will be called "request;"
 class trans_test #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16);
     int unsigned total_trans;
-    
+
     int unsigned max_pending; // Max value possible is = DRVRS (corner case: all drivers pndng)
 
     payload_mode_e payload_mode;
-
-    // Min and max packets per device 
-    int unsigned packets_min; // Those needs special handler in test -- make sure max packets x n devices == total trans
-    int unsigned packets_max;
 
     // How many transactions, of total trans, are broadcast
     // Value between 0 and 100.
@@ -102,14 +98,12 @@ class trans_test #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16);
 
     function new(
         int unsigned total_trans, int unsigned max_pending, 
-        payload_mode_e payload_mode, int unsigned packets_min, int unsigned packets_max,
-        int unsigned broadcast_weight, int unsigned min_gap, int unsigned max_gap);
+        payload_mode_e payload_mode, int unsigned broadcast_weight, 
+        int unsigned min_gap, int unsigned max_gap);
 
         this.total_trans = total_trans;
         this.max_pending = max_pending;
         this.payload_mode = payload_mode;
-        this.packets_min = packets_min;
-        this.packets_max = packets_max;
         this.broadcast_weight = broadcast_weight;
         this.min_gap = min_gap;
         this.max_gap = max_gap;
@@ -117,14 +111,8 @@ class trans_test #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16);
     endfunction
 
     function void validate();
-        if (packets_min > packets_max)
-            $fatal(1, "[%0t] trans_test: packets_min exceds packets_max", $time);
         if (min_gap > max_gap)
             $fatal(1, "[%0t] trans_test: min_gap exceds max_gap", $time);
-        if (total_trans < packets_min * DRVRS)
-            $fatal(1, "[%0t] trans_test: total_trans is too small for packets_min", $time);
-        if (total_trans > packets_max * DRVRS)
-            $fatal(1, "[%0t] trans_test: total_trans exceeds packets_max capacity", $time);
         if (broadcast_weight == 100)
             $info("[%0t] trans_test: BROADCAST only mode configured", $time);
         if (broadcast_weight == 0)
@@ -133,16 +121,12 @@ class trans_test #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16);
             $info("[%0t] trans_test: BURST mode configured", $time);
 
         case (payload_mode)
-
             PAYLOAD_RANDOM:
                 $info("[%0t] trans_test: RANDOM payload mode configured", $time);
-
             PAYLOAD_SWITCHING:
                 $info("[%0t] trans_test: SWITCHING ACTIVITY pattern mode configured", $time);
-
             default:
                 $fatal(1, "[%0t] trans_test: invalid payload mode", $time);
-
         endcase
     endfunction
 
