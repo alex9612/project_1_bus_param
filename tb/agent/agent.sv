@@ -11,15 +11,21 @@ class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit
     drv_mbx_t agent_drv_mbx[DRVRS];
     drv_mbx_t agent_scb_mbx; // Create a copy of the transaction to sb
 
-    function new(gen_mbx_t gen_agent_mbx);
+    function new(gen_mbx_t gen_agent_mbx, drv_mbx_t agent_drv_mbx[DRVRS], drv_mbx_t agent_scb_mbx);
+        if (gen_agent_mbx == null || agent_scb_mbx == null)
+            $fatal(1, "[Agent] A required mailbox was not created.");
+        
         this.gen_agent_mbx = gen_agent_mbx;
+        this.agent_drv_mbx[DRVRS] = agent_drv_mbx[DRVRS];
+        this.agent_scb_mbx = agent_scb_mbx;
 
-        for (int i = 0; i < DRVRS; i++) begin
-            agent_drv_mbx[i] = new();
-        end
-
-        agent_scb_mbx = new();
     endfunction
+
+
+
+
+
+
 
     task run();
         $info("[%0t] The Agent has been initialized", $time);
