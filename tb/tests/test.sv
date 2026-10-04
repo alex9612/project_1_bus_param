@@ -21,6 +21,7 @@ class test #(parameter int DRVRS = 4);
         int unsigned broadcast_weight;
         int unsigned min_gap;
         int unsigned max_gap;
+        int signed arg_value;
 
         // Default configuration
         total_trans = 100;
@@ -31,20 +32,30 @@ class test #(parameter int DRVRS = 4);
         max_gap = 5;
 
         // Plusargs override defaults
-        if ($value$plusargs("TOTAL_TRANS=%d", total_trans))
+        if ($value$plusargs("TOTAL_TRANS=%d", arg_value)) begin
+            total_trans = $unsigned(arg_value);
             $info("[%0t] test: TOTAL_TRANS = %0d", $time, total_trans);
+        end
 
-        if ($value$plusargs("MAX_PENDING=%d", max_pending))
+        if ($value$plusargs("MAX_PENDING=%d", arg_value)) begin
+            max_pending = $unsigned(arg_value);
             $info("[%0t] test: MAX_PENDING = %0d", $time, max_pending);
+        end
 
-        if ($value$plusargs("BROADCAST_WEIGHT=%d", broadcast_weight))
+        if ($value$plusargs("BROADCAST_WEIGHT=%d", arg_value)) begin
+            broadcast_weight = $unsigned(arg_value);
             $info("[%0t] test: BROADCAST_WEIGHT = %0d", $time, broadcast_weight);
+        end
 
-        if ($value$plusargs("MIN_GAP=%d", min_gap))
+        if ($value$plusargs("MIN_GAP=%d", arg_value)) begin
+            min_gap = $unsigned(arg_value);
             $info("[%0t] test: MIN_GAP = %0d", $time, min_gap);
+        end
 
-        if ($value$plusargs("MAX_GAP=%d", max_gap))
+        if ($value$plusargs("MAX_GAP=%d", arg_value)) begin
+            max_gap = $unsigned(arg_value);
             $info("[%0t] test: MAX_GAP = %0d", $time, max_gap);
+        end
 
         if ($value$plusargs("PAYLOAD_MODE=%s", payload_mode_arg)) begin
             case (payload_mode_arg)
@@ -70,6 +81,7 @@ class test #(parameter int DRVRS = 4);
         $info("[%0t] test: sending configuration to generator", $time);
 
         mbx_test_to_gen.put(request);
+        mbx_test_to_sb.put(request);
     endtask
 
 endclass
