@@ -73,31 +73,62 @@ class Transaction #(parameter int PCKG_SZ = 16, parameter int MAX_DEVICES = 10);
 
 endclass
 
+
+typedef enum {
+    PAYLOAD_RANDOM,
+    PAYLOAD_SWITCHING // Directed switching patterns defined in the test plan
+} payload_mode_e;
+
 // From the test to the generator
 // In test, the handler for a trans_test will be called "request;"
 class trans_test;
-    int packets_min;
-    int packets_max;
+    int unsigned total_trans;
+    int unsigned number_devices;
+
+    int unsigned max_pending; // Max value possible is = DRVRS (corner case: all drivers pndng)
+
+    payload_mode_e payload_mode;
+
+    // Min and max packets per device 
+    int unsigned packets_min; // Those needs special handler in test -- make sure max packets x n devices == total trans
+    int unsigned packets_max;
 
     // How many transactions, of total trans, are broadcast
-    // Value between 0 and 1.
-    int broadcast_weight;
+    // Value between 0 and 100.
+    int unsigned broadcast_weight;
 
     // Delay inserted between seq items in gaps
-    int min_gap;
-    int max_gap;
+    int unsigned min_gap;
+    int unsigned max_gap;
 
     function void validate();
         if (packet_min > packets_max)
             $fatal(1, "[%0t] trans_test: packets_min exceds packets_max", $time);
         if (min_gap > max_gap)
-            $fatal(1, "[%0t] trans_test: packets_min exceds packets_max", $time);
-        if (broadcast_weight == 1)
+            $fatal(1, "[%0t] trans_test: min_gap exceds max_gap", $time);
+        if (total_trans < packets_min * number_devices)
+            $fatal(1, "[%0t] trans_test: total_trans is too small for packets_min", $time);
+        if (total_trans > packets_max * number_devices)
+            $fatal(1, "[%0t] trans_test: total_trans exceeds packets_max capacity", $time);
+        if (broadcast_weight == 100)
             $info("[%0t] trans_test: BROADCAST only mode configured", $time);
         if (broadcast_weight == 0)
             $info("[%0t] trans_test: UNICAST only mode configured", $time);
-        if (max_gap - min_gap == 0)
-            $info("[%0t] trans_test: Burst mode configured", $time);
+        if (max_gap == 0 && min_gap == 0)
+            $info("[%0t] trans_test: BURST mode configured", $time);
+
+        case (payload_mode)
+
+            PAYLOAD_RANDOM:
+                $info("[%0t] trans_test: RANDOM payload mode configured", $time);
+
+            PAYLOAD_SWITCHING:
+                $info("[%0t] trans_test: SWITCHING ACTIVITY pattern mode configured", $time);
+
+            default:
+                $fatal(1, "[%0t] trans_test: invalid payload mode", $time);
+
+        endcase
     endfunction
 
 endclass
