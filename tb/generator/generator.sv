@@ -64,7 +64,7 @@ class generator #(parameter int DRVRS   = 4, parameter int PCKG_SZ = 16, paramet
             $info("[%0t] generator: transaction %0d generated - src=%0d dst=%0d broadcast=%0d gap=%0d payload=0x%0h",
                   $time, trans.id, trans.source, trans.destination, trans.broadcast, trans.gap, trans.payload);
 
-            mbx_gen_to_agent.put(trans);
+            mbx_gen_to_agent.put(trans); // This can be improve with an event - done listening from agent
         end
     endtask
 
