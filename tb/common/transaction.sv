@@ -101,8 +101,25 @@ class trans_test;
     int unsigned min_gap;
     int unsigned max_gap;
 
+    function new(
+        int unsigned total_trans, int unsigned number_devices, int unsigned max_pending, 
+        payload_mode_e payload_mode, int unsigned packets_min, int unsigned packets_max,
+        int unsigned broadcast_weight, int unsigned min_gap, int unsigned max_gap);
+
+        this.total_trans = total_trans;
+        this.number_devices = number_devices;
+        this.max_pending = max_pending;
+        this.payload_mode = payload_mode;
+        this.packets_min = packets_min;
+        this.packets_max = packets_max;
+        this.broadcast_weight = broadcast_weight;
+        this.min_gap = min_gap;
+        this.max_gap = max_gap;
+
+    endfunction
+
     function void validate();
-        if (packet_min > packets_max)
+        if (packets_min > packets_max)
             $fatal(1, "[%0t] trans_test: packets_min exceds packets_max", $time);
         if (min_gap > max_gap)
             $fatal(1, "[%0t] trans_test: min_gap exceds max_gap", $time);
@@ -133,11 +150,25 @@ class trans_test;
 
 endclass
 
-class trans_gen #();
-    int id;
-    int source;
-    rand bit [7:0] destination;
-    rand payload
+// This transaction is comming from generator -> agent
+class trans_gen #(parameter int PCKG_SZ = 16);
+    int unsigned id; // ID of the transaction
+    rand int unsigned source; // Metadata
+    rand int unsigned destination;
+    rand bit [PCKG_SZ-9:0] payload;
+    rand int unsigned gap;
+    rand bit broadcast;
+
+    function new(int unsigned id, int unsigned source, int unsigned destination,
+        bit [PCKG_SZ-9:0] payload, int unsigned gap, bit broadcast);
+        this.id = id;
+        this.source = source;
+        this.destination = destination;
+        this.payload = payload;
+        this.gap = gap;
+        this.broadcast = broadcast;
+
+    endfunction
 
 endclass
 
