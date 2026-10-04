@@ -89,9 +89,23 @@ class trans_gen #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
 
 endclass
 
-class trans_drv #();
+class trans_drv #(parameter int unsigned DRVRS = 4, parameter int unsigned PCKG_SZ = 16,
+                  parameter bit [7:0] BROADCAST_CODE = 8'hFF);
+    int unsigned id;
+    int unsigned source; // Metadata
+    bit [PCKG_SZ-1:0] packet;
+    int unsigned gap;
+    bit broadcast;
+    time generation_time;
 
-
+    function new(trans_gen #(.DRVRS(DRVRS), .PCKG_SZ(PCKG_SZ), .BROADCAST_CODE(BROADCAST_CODE)) request);
+        this.id = request.id;
+        this.source = request.source;
+        this.packet = request.get_packet();
+        this.gap = request.gap;
+        this.broadcast = request.broadcast;
+        this.generation_time = request.generation_time;
+    endfunction
 
 endclass
 
