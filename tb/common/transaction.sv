@@ -83,8 +83,7 @@ typedef enum {
 // In test, the handler for a trans_test will be called "request;"
 class trans_test #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16);
     int unsigned total_trans;
-    int unsigned number_devices;
-
+    
     int unsigned max_pending; // Max value possible is = DRVRS (corner case: all drivers pndng)
 
     payload_mode_e payload_mode;
