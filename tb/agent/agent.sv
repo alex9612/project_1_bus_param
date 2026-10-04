@@ -11,7 +11,7 @@ class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit
     drv_mbx_t agent_drv_mbx[DRVRS];
     drv_mbx_t agent_scb_mbx; // Create a copy of the transaction to sb
 
-    function new(transaction_mbx_t gen_agent_mbx);
+    function new(gen_mbx_t gen_agent_mbx);
         this.gen_agent_mbx = gen_agent_mbx;
 
         for (int i = 0; i < DRVRS; i++) begin
