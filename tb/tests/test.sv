@@ -3,9 +3,12 @@
 class test #(parameter int DRVRS = 4);
 
     mailbox #(trans_test #(DRVRS)) mbx_test_to_gen;
-
-    function new(mailbox #(trans_test #(DRVRS)) mbx_test_to_gen);
+    mailbox #(trans_test #(DRVRS)) mbx_test_to_sb;
+    
+    // Mbx to gen and to sb
+    function new(mailbox #(trans_test #(DRVRS)) mbx_test_to_gen, mailbox #(trans_test #(DRVRS)) mbx_test_to_sb = null);
         this.mbx_test_to_gen = mbx_test_to_gen;
+        this.mbx_test_to_sb = mbx_test_to_sb;
     endfunction
 
     task run();
