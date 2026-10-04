@@ -81,7 +81,7 @@ typedef enum {
 
 // From the test to the generator
 // In test, the handler for a trans_test will be called "request;"
-class trans_test;
+class trans_test #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16);
     int unsigned total_trans;
     int unsigned number_devices;
 
@@ -102,12 +102,11 @@ class trans_test;
     int unsigned max_gap;
 
     function new(
-        int unsigned total_trans, int unsigned number_devices, int unsigned max_pending, 
+        int unsigned total_trans, int unsigned max_pending, 
         payload_mode_e payload_mode, int unsigned packets_min, int unsigned packets_max,
         int unsigned broadcast_weight, int unsigned min_gap, int unsigned max_gap);
 
         this.total_trans = total_trans;
-        this.number_devices = number_devices;
         this.max_pending = max_pending;
         this.payload_mode = payload_mode;
         this.packets_min = packets_min;
@@ -123,9 +122,9 @@ class trans_test;
             $fatal(1, "[%0t] trans_test: packets_min exceds packets_max", $time);
         if (min_gap > max_gap)
             $fatal(1, "[%0t] trans_test: min_gap exceds max_gap", $time);
-        if (total_trans < packets_min * number_devices)
+        if (total_trans < packets_min * DRVRS)
             $fatal(1, "[%0t] trans_test: total_trans is too small for packets_min", $time);
-        if (total_trans > packets_max * number_devices)
+        if (total_trans > packets_max * DRVRS)
             $fatal(1, "[%0t] trans_test: total_trans exceeds packets_max capacity", $time);
         if (broadcast_weight == 100)
             $info("[%0t] trans_test: BROADCAST only mode configured", $time);
@@ -159,14 +158,8 @@ class trans_gen #(parameter int PCKG_SZ = 16);
     rand int unsigned gap;
     rand bit broadcast;
 
-    function new(int unsigned id, int unsigned source, int unsigned destination,
-        bit [PCKG_SZ-9:0] payload, int unsigned gap, bit broadcast);
+    function new(int unsigned id);
         this.id = id;
-        this.source = source;
-        this.destination = destination;
-        this.payload = payload;
-        this.gap = gap;
-        this.broadcast = broadcast;
 
     endfunction
 
