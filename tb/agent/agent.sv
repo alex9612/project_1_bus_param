@@ -16,23 +16,22 @@ class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit
             $fatal(1, "[Agent] A required mailbox was not created.");
         
         this.gen_agent_mbx = gen_agent_mbx;
-        this.agent_drv_mbx[DRVRS] = agent_drv_mbx[DRVRS];
         this.agent_scb_mbx = agent_scb_mbx;
+
+        for (int i = 0; i < DRVRS; i++) begin
+            if (agent_drv_mbx[i] == null)
+                $fatal(1, "[Agent] Mailbox for driver %0d was not created.", i);
+
+            this.agent_drv_mbx[i] = agent_drv_mbx[i];
+        end
 
     endfunction
 
-
-
-
-
-
-
     task run();
-        $info("[%0t] The Agent has been initialized", $time);
-
         trans_gen_t tr;
         trans_drv_t tr_drv;
         trans_drv_t tr_scb;
+        $info("[%0t] The Agent has been initialized", $time);
 
         forever begin
             gen_agent_mbx.get(tr);
@@ -50,7 +49,7 @@ class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit
             agent_scb_mbx.put(tr_scb);
             $info("[%0t] [Agent] Transaction [%0d] sent to Scoreboard", $time, tr.id);
             agent_drv_mbx[tr.source].put(tr_drv);
-            $info("[%0t] [Agent] Transaction [%0d] sent to Driver [%0d]", $time, tr_drv.id, tr_drv.destination);
+            $info("[%0t] [Agent] Transaction [%0d] sent to Driver [%0d]", $time, tr.id, tr.destination);
         end
     endtask
 
