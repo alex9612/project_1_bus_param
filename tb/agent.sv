@@ -52,7 +52,7 @@ class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit
             $info("[%0t] [Agent] Transaction [%0d] sent to Scoreboard", $time, tr.id);
 
             agent_drv_mbx[tr.source].put(tr_drv);
-            $info("[%0t] [Agent] Transaction [%0d] sent to Driver [%0d]", $time, tr.id, tr.destination);
+            $info("[%0t] [Agent] Transaction [%0d] sent to Driver [%0d]", $time, tr.id, tr.source);
             @(drv_done[tr.source]); // Waiting for drv_done before sending the next seq item
         end
     endtask
