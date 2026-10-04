@@ -17,29 +17,35 @@ class driver #(parameter int BITS = 1, parameter int DRVRS = 4, parameter int PC
     task run();
         trans_agent_t seq_item;
         $info("[%0t] The Driver [%0d] has been initialized", $time, driver_id);
-        vif.reset = 1; // Reset first 2 cycles
-        @(posedge vif.clk);
         vif.reset = 1;
+        vif.pndng = 0;
+        vif.D_pop = '0;
+        repeat(2);
         @(posedge vif.clk);
         vif.reset = 0;
-        @(posedge vif.clk);
+
         forever begin
+            @(posedge vif.clk);
             // Wating for a new transaction from the Agent
             // Try_get() instead of get() solves the waiting seq item problem
             if (agent_drv_mbx.try_get(seq_item)) begin
                 $info("[%0t] Driver [%0d] received transaction %0d", $time, driver_id, seq_item.id);
-                    vif.pndng = 1;
+                    
+                    repeat(seq.item.gap) @(posedge vif.clk); // Insert delay of the seq item
                     vif.D_pop = seq_item.packet;
+                    vif.pndng = 1;
+
+                    do @(posedge vif.clk); // Hold seq_item.packet in D_pop until the DUT takes D_pop
+                    while (!vif.pop);
+                    vif.pndng = 0;
+                    vif.D_pop = '0;
+                    ->drv_done; // Now Agent can sent the next seq item
             end
             else begin
                 $info("[%0t] Driver [%0d] waiting for a transaction %0d", $time, driver_id, seq_item.id);
                     vif.pndng = 0;
                     vif.D_pop = 0;
             end
-            
-
         end
-
     endtask
-
 endclass
