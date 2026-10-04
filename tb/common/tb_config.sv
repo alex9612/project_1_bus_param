@@ -80,13 +80,6 @@ class TbConfig(parameter int BITS = 1, parameter int DRVRS = 4, parameter int PC
         $display("FIFO depth            = %0d", fifo_depth);
         $display("FIFO depth range      = [%0d:%0d]",
                  min_fifo_depth, max_fifo_depth);
-
-        $display("Transaction delay     = [%0d:%0d] cycles",
-                 min_delay, max_delay);
-
-        $display("Transactions/device   = [%0d:%0d]",
-                 min_transactions, max_transactions);
-
         $display("Timeout               = %0d cycles",
                  timeout_cycles);
 
