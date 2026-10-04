@@ -1,11 +1,15 @@
-class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter int MAX_DEVICES = 10);
 
-    typedef Transaction #(.PCKG_SZ(PCKG_SZ), .MAX_DEVICES(MAX_DEVICES)) transaction_t;
-    typedef mailbox #(transaction_t) transaction_mbx_t;
+class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit [7:0] BROADCAST_CODE = 8'hFF);
 
-    transaction_mbx_t gen_agent_mbx;
-    transaction_mbx_t agent_drv_mbx[DRVRS];
-    transaction_mbx_t agent_scb_mbx;
+    typedef trans_gen #(.DRVRS(DRVRS), .PCKG_SZ(PCKG_SZ), .BROADCAST_CODE(BROADCAST_CODE)) trans_gen_t;
+    typedef trans_drv #(.DRVRS(DRVRS), .PCKG_SZ(PCKG_SZ), .BROADCAST_CODE(BROADCAST_CODE)) trans_drv_t;
+
+    typedef mailbox #(trans_gen_t) gen_mbx_t;
+    typedef mailbox #(trans_drv_t) drv_mbx_t;
+
+    gen_mbx_t gen_agent_mbx;
+    drv_mbx_t agent_drv_mbx[DRVRS];
+    drv_mbx_t agent_scb_mbx;
 
     function new(transaction_mbx_t gen_agent_mbx);
         this.gen_agent_mbx = gen_agent_mbx;
