@@ -22,11 +22,12 @@ class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit
     endfunction
 
     task run();
+        $info("[%0t] The Agent has been initialized", $time);
+
         trans_gen_t tr;
         trans_drv_t tr_drv;
         trans_drv_t tr_scb;
 
-        // Ideally an event is the way here
         forever begin
             gen_agent_mbx.get(tr);
 
@@ -37,12 +38,13 @@ class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit
                 $fatal(1, "[Agent] Invalid source device %0d.", tr.source);
             end
 
-            // This copy tells the scoreboard what was requested.
             tr_drv = new(tr);
-            tr_scb = new(tr);
+            tr_scb = new(tr); // This copy tells the scoreboard what was requested.
 
             agent_scb_mbx.put(tr_scb);
+            $info("[%0t] [Agent] Transaction [%0d] sent to Scoreboard", $time, tr.id);
             agent_drv_mbx[tr.source].put(tr_drv);
+            $info("[%0t] [Agent] Transaction [%0d] sent to Driver [%0d]", $time, tr.id, tr.destination);
         end
     endtask
 
