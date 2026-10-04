@@ -20,7 +20,7 @@ class generator #(parameter int DRVRS   = 4, parameter int PCKG_SZ = 16);
         for (int unsigned i = 0; i < request.total_trans; i++) begin
             trans = new(i);
             if (!trans.randomize() 
-            
+                // no sé que poner acá, sigo pensando
             )
                 $fatal(1, "[%0t] generator: randomization failed for transaction %0d", $time,i);
             case (request.payload_mode)

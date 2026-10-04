@@ -1,9 +1,10 @@
 
-class test #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16);
+// class test #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16);
+class test #(parameter int DRVRS = 4);
 
     mailbox #(trans_test #(DRVRS)) mbx_test_to_gen;
 
-    function new(mailbox #(trans_test) mbx_test_to_gen);
+    function new(mailbox #(trans_test #(DRVRS)) mbx_test_to_gen);
         this.mbx_test_to_gen = mbx_test_to_gen;
     endfunction
 
