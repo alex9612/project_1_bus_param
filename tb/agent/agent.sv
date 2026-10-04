@@ -7,6 +7,8 @@ class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit
     typedef mailbox #(trans_gen_t) gen_mbx_t;
     typedef mailbox #(trans_drv_t) drv_mbx_t;
 
+    event drv_done[DRVRS]; // Recently added: tracks everytime a driver fetch a seq item through the interface
+
     gen_mbx_t gen_agent_mbx;
     drv_mbx_t agent_drv_mbx[DRVRS];
     drv_mbx_t agent_scb_mbx; // Create a copy of the transaction to sb
@@ -48,9 +50,10 @@ class Agent #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit
 
             agent_scb_mbx.put(tr_scb);
             $info("[%0t] [Agent] Transaction [%0d] sent to Scoreboard", $time, tr.id);
+
             agent_drv_mbx[tr.source].put(tr_drv);
             $info("[%0t] [Agent] Transaction [%0d] sent to Driver [%0d]", $time, tr.id, tr.destination);
+            @(drv_done[tr.source]); // Waiting for drv_done before sending the next seq item
         end
     endtask
-
 endclass
