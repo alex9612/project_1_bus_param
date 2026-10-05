@@ -92,13 +92,8 @@ module tb_top;
                      .BROADCAST_CODE(BROADCAST_CODE)) driver_t;
 
     initial begin
-`ifdef FSDB
         $fsdbDumpfile("smoke.fsdb");
-        $fsdbDumpvars(0, tb_top, "+all");
-`elsif VCD
-        $dumpfile("smoke.vcd");
-        $dumpvars(0, tb_top);
-`endif
+        $fsdbDumpvars(0, tb_top);
     end
 
     initial begin
