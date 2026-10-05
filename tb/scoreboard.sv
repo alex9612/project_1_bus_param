@@ -51,6 +51,8 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                         foreach (n_per_source[i])
                             $display("[Scoreboard] Device %0d sent %0d transactions", i, n_per_source[i]);
                     end
+                    default:
+                        $warning("[%0t] [Scoreboard] Unknown command received", $time);
                 endcase
             end
             #1;
