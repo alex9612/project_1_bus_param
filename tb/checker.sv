@@ -40,8 +40,22 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     endtask
 
     // Manage seq items comming from Agent -> SCB -> Checker 
+    // Those are errors related with the generator and not capture before, not the DUT. 
+    // For example: Wrong source defined.
     task get_requests();
-
+        trans_sb_t tr;
+        forever begin
+            scb_chckr_mbx.get(tr);
+            if (tr.source >= DRVRS) begin
+                $error("[%0t] [Checker] Invalid source %0d", $time, tr.source);
+                n_error++;
+            end
+            else begin
+                req_q[tr.source].push_back(tr);
+                n_req++;
+                $display("[%0t] [Checker] Request received: source=%0d packet=0x%0h", $time, tr.source, tr.packet);
+            end
+        end
     endtask
 
     // Manage seq items observed by the monitors
