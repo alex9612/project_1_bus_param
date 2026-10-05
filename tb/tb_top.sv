@@ -134,7 +134,6 @@ module tb_top;
         for (int i = 0; i < DRVRS; i++) begin
             drivers[i] = new(i, agent_drv_mbx[i]);
             drivers[i].vif = driver_vifs[i];
-            drivers[i].drv_done = agent.drv_done[i];
         end
 
         // Completions can arrive in any device order, so count them independently.
@@ -142,7 +141,7 @@ module tb_top;
             automatic int id = i;
             fork
                 forever begin
-                    @(agent.drv_done[id]);
+                    @(drivers[id].drv_done);
                     completed++;
                 end
             join_none
