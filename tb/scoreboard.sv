@@ -36,57 +36,38 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
         join
     endtask
     
+    // Task for transactions comming from the Agent
     task get_transactions();
         trans_drv_t tr;
         trans_sb_t sb_tr;
-        sb_cmd_e cmd;
-
         forever begin
             agent_scb_mbx.get(tr);
             sb_tr = new(tr.id, tr.source, tr.packet, tr.broadcast, tr.generation_time);
             historial.push_back(sb_tr);
-
             if (tr.broadcast) 
                 n_broadcast++;
             else
                 n_unicast++;
-            
-            n_per_source //
+            n_per_source[tr.source]++;
+            scb_chkr_mbx.put(sb_tr);
+        end
+    endtask
 
-
-
-
-
-
-
-
-
-
-            if (agent_scb_mbx.num() > 0) begin
-                agent_scb_mbx.get(tr);
-                sb_tr = new(tr.id, tr.source, tr.packet, tr.broadcast, tr.generation_time);
-                historial.push_back(sb_tr);
-                if (tr.broadcast)
-                    n_broadcast++;
-                else
-                    n_unicast++;
-                n_per_source[tr.source]++;
-                scb_chkr_mbx.put(sb_tr);
-            end
-            if (test_scb_mbx.num() > 0) begin
-                test_scb_mbx.get(cmd);
-                case (cmd)
-                    SB_REPORT: begin
-                        $display("[%0t] [Scoreboard] Total=%0d Unicast=%0d Broadcast=%0d", $time, 
+    // Task for commands comming from Test
+    task get_commands();
+        sb_cmd_e cmd;
+        forever begin
+            test_scb_mbx.get(cmd);
+            case (cmd)
+                SB_REPORT: 
+                    report();
+                    $display("[%0t] [Scoreboard] Total=%0d Unicast=%0d Broadcast=%0d", $time, 
                                 historial.size(), n_unicast, n_broadcast);
-                        foreach (n_per_source[i])
+                    foreach (n_per_source[i])
                             $display("[Scoreboard] Device %0d sent %0d transactions", i, n_per_source[i]);
-                    end
-                    default:
-                        $warning("[%0t] [Scoreboard] Unknown command received", $time);
-                endcase
-            end
-            #1;
+                default:
+                    $warning("[%0t] [Scoreboard] Unknown command received", $time);
+            endcase
         end
     endtask
 endclass
