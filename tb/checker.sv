@@ -1,6 +1,6 @@
 
 class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, 
-                parameter bit [7:0] BROADCAST_CODE = 8'hFF, parameter bit BROADCAST_TO_SOURCE = 0);
+                parameter bit [7:0] BROADCAST_CODE = 8'hFF);
 
     typedef trans_mon #(.PCKG_SZ(PCKG_SZ)) trans_mon_t;
     typedef trans_sb #(.PCKG_SZ(PCKG_SZ)) trans_sb_t;
@@ -102,7 +102,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     // In this part, the seq_items in the destination device are not in order, deppends on the DUT trafic and delay
                     if (expected.broadcast) begin // Ask if the transaction accepted by the DUT was broadcast
                         for (int i = 0; i < DRVRS; i++) begin
-                            if (BROADCAST_TO_SOURCE || (i != expected.source))
+                            if (i != expected.source)
                                 exp_q[i].push_back(expected);
                         end
                     end
