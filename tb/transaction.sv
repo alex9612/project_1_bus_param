@@ -89,7 +89,7 @@ class trans_gen #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
 
 endclass
 
-// From the agent to drivers
+// From the agent to drivers -- Agent sent a copy of trans_drv to scb
 class trans_drv #(parameter int unsigned DRVRS = 4, parameter int unsigned PCKG_SZ = 16,
                   parameter bit [7:0] BROADCAST_CODE = 8'hFF);
     int unsigned id;

@@ -14,9 +14,9 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     test_mbx_t test_scb_mbx;  // Commands from the test
 
     trans_sb_t historial[$];   // Every transaction received
-    int unsigned n_unicast;
-    int unsigned n_broadcast;
-    int unsigned n_per_source[DRVRS];
+    int unsigned n_unicast; // Counts how many unicast have been generated
+    int unsigned n_broadcast; // Counts how many broadcast have been generated
+    int unsigned n_per_source[DRVRS]; // Counts how many trans per source have been generated
 
     function new(agent_mbx_t agent_scb_mbx, chkr_mbx_t scb_chkr_mbx, test_mbx_t test_scb_mbx);
         this.agent_scb_mbx = agent_scb_mbx;
@@ -41,7 +41,7 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
         trans_drv_t tr;
         trans_sb_t sb_tr;
         forever begin
-            agent_scb_mbx.get(tr);
+            agent_scb_mbx.get(tr); // Get the transaction from the agent and creates a new seq for the checker.
             sb_tr = new(tr.id, tr.source, tr.packet, tr.broadcast, tr.generation_time);
             historial.push_back(sb_tr);
             if (tr.broadcast) 
@@ -63,7 +63,7 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     report();
                     $display("[%0t] [Scoreboard] Total=%0d Unicast=%0d Broadcast=%0d", $time, 
                                 historial.size(), n_unicast, n_broadcast);
-                    foreach (n_per_source[i])
+                    foreach (n_per_source[i]) // Display at this point, the total trans send for each device. Maybe this is broken, Ill check later
                             $display("[Scoreboard] Device %0d sent %0d transactions", i, n_per_source[i]);
                 default:
                     $warning("[%0t] [Scoreboard] Unknown command received", $time);
