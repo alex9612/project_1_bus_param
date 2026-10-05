@@ -89,6 +89,7 @@ class trans_gen #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
 
 endclass
 
+// From the agent to drivers
 class trans_drv #(parameter int unsigned DRVRS = 4, parameter int unsigned PCKG_SZ = 16,
                   parameter bit [7:0] BROADCAST_CODE = 8'hFF);
     int unsigned id;
@@ -109,9 +110,25 @@ class trans_drv #(parameter int unsigned DRVRS = 4, parameter int unsigned PCKG_
 
 endclass
 
-class trans_mon #();
+typedef enum {
+    MON_POP,
+    MON_PUSH,
+    MON_RESET
+} monitor_event_e;
 
+// From the monitor to checker
+class trans_mon #(parameter int unsigned PCKG_SZ = 16);
+    int unsigned device_id;
+    mon_event_e event_type;
+    bit [PCKG_SZ-1:0] packet;
+    time event_time;
 
+    function new(int unsigned device_id, mon_event_e event_type, bit [PCKG_SZ-1:0] packet = '0);
+        this.device_id  = device_id;
+        this.event_type = event_type;
+        this.packet     = packet;
+        this.event_time = $time;
+    endfunction
 
 endclass
 
