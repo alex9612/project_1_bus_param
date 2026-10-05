@@ -14,8 +14,8 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     // typedef bit [PCKG_SZ-1:0] pkt_t;
 
     // Sync packets received experiment
-    trans_sb_t exp_q [DRVRS][$]; // Seq items -- from DUT POP but not PUSH yet
-    trans_sb_t req_q [DRVRS][$]; // Seq items planned -- Send by Agent to scb
+    trans_sb_t exp_q [DRVRS][$]; // Expected queue: Seq items -- from DUT POP but not PUSH yet
+    trans_sb_t req_q [DRVRS][$]; // Requested queue: Seq items planned -- Send by Agent to scb
 
     // pkt_t expected [DRVRS][$];
 
@@ -24,7 +24,8 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     int unsigned n_pop;
     int unsigned n_push;
     int unsigned n_ok;
-    int unsigned n_error;
+    int unsigned n_error_trans; // Counts the errors related with the transactions generated
+    int unsigned n_error_dut; // Counts the errors related with the DUT
 
     function new(mon_mbx_t mon_chkr_mbx, scb_mbx_t scb_chkr_mbx);
         this.mon_chkr_mbx = mon_chkr_mbx;
@@ -48,7 +49,19 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
             scb_chckr_mbx.get(tr);
             if (tr.source >= DRVRS) begin
                 $error("[%0t] [Checker] Invalid source %0d", $time, tr.source);
-                n_error++;
+                n_error_trans++;
+            end
+            if (tr.broadcast != BROADCAST_CODE) begin
+                $error("[%0t] [Checker] Invalid broadcast code %0d", $time, tr.broadcast);
+                n_error_trans++;
+            end
+            if (if (tr.source == tr.packet[PCKG_SZ-1 -: 8])) begin
+                $error("[%0t] [Checker] Invalid transaction %0d. Source %0d == Destination %0d", $time, tr.id, tr.source, tr.destination);
+                n_error_trans++;
+            end
+            if (if (tr.gap < 0)) begin
+                $error("[%0t] [Checker] Invalid transaction %0d. Source %0d == Destination %0d", $time, tr.id, tr.source, tr.destination);
+                n_error_trans++;
             end
             else begin
                 req_q[tr.source].push_back(tr);
