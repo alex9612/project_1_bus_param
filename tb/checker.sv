@@ -77,6 +77,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     trans_sb_t expected;
                     int unsigned src;
                     int unsigned dst;
+
                     src = tr.device_id;
                     n_pop++;
                     
@@ -110,16 +111,50 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                         dst = expected.packet[PCKG_SZ-1:PCKG_SZ-9];
                         if (dst >= DRVRS) begin
                             $error("[%0t] [Checker] Invalid destination %0d", $time, dst);
-                            n_error++;
+                            n_error_dut++;
                         end
                         else begin
                             exp_q[dst].push_back(expected);
                         end
                     end
                 MON_PUSH:
-                    
+                    trans_sb_t expected;
+                    int unsigned dst;
+                    int unsigned match_idx;
+                    bit found;
+
+                    dst = tr.device_id;
+                    n_push++;
+                    found = 0;
+
+                    // FIRST PART: Was the checker expecting a PUSH in this destination?
+                    if (exp_q[dst].size() == 0) begin
+                        $error("[%0t] [Checker] Unexpected PUSH in device %0d packet=0x%0h",
+                               $time, dst, tr.packet);
+                        n_error_dut++;
+                    end
+                    else begin
+                        // Search the expected packet because transactions in the
+                        // destination queue are not necessarily received in order
+                        for (int i = 0; i < exp_q[dst].size(); i++) begin
+                            if (exp_q[dst][i].packet === tr.packet) begin
+                                match_idx = i;
+                                found = 1;
+                                break;
+                            end
+                        end
+                        if (!found) begin 
+                            $error("[%0t] [Checker] PUSH mismatch destination=%0d actual=0x%0h", $time, dst, tr.packet);
+                            n_error_dut++;
+                        end
+                        else begin
+                            expected = exp_q[dst][match_idx];
+                            exp_q[dst].delete(match_idx);
+                            $display("[%0t] [Checker] PUSH OK destination=%0d packet=0x%0h", $time, dst, tr.packet);
+                        end
+                    end
                 MON_RESET:
-                    
+
                 default:
                     $warning("[%0t] [Checker] Unknown monitor event", $time);
             endcase
