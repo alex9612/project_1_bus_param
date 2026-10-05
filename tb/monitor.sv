@@ -6,14 +6,14 @@ class monitor #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter b
 
 
     task run();
-        $display("[%0t] El monitor fue inicializado", $time);
+        $display("[%0t] The monitor has been initialized", $time);
         @(negedge vif.reset); 
         forever begin
             
 
 
 
-            
+
         end
     endtask
 
