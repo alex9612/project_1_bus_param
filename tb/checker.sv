@@ -1,6 +1,6 @@
 
 class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, 
-                parameter bit [7:0] BROADCAST_CODE = 8'hFF, parameter bit BCAST_TO_SOURCE = 0);
+                parameter bit [7:0] BROADCAST_CODE = 8'hFF, parameter bit BROADCAST_TO_SOURCE = 0);
 
     typedef trans_mon #(.PCKG_SZ(PCKG_SZ)) trans_mon_t;
     typedef trans_sb #(.PCKG_SZ(PCKG_SZ)) trans_sb_t;
@@ -69,7 +69,60 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
 
     // Manage seq items observed by the monitors
     task get_monitor_events();
+        trans_mon_t tr;
+        forever begin
+            mon_chkr_mbx.get(tr);
+            case (tr.event_type) // Event observed in monitor
+                MON_POP:
+                    trans_sb_t expected;
+                    int unsigned src;
+                    int unsigned dst;
+                    src = tr.device_id;
+                    n_pop++;
+                    
+                    // FIRST PART: POP from the DUT match? 
+                    // The checker was not expecting that seq item from this source based on the golden ref
+                    if (req_q[src].size() == 0) begin
+                        $error("[%0t] [Checker] Unexpected POP from device %0d packet=0x%0h", $time, src, tr.packet);
+                        n_error_dut++;
+                        return;
+                    end
+                    // First transaction waiting for this source
+                    expected = req_q[src].pop_front(); // POPs from the DUT are in order due the FIFO in the source device
+                    // Verify that what entered in the DUT is what the Agent sent to the Driver and SCB
+                    if (tr.packet !== expected.packet) begin
+                        $error("[%0t] [Checker] POP mismatch source=%0d expected=0x%0h actual=0x%0h", $time, src, expected.packet, mon_tr.packet);
+                        n_error_dut++;
+                    end
+                    else begin
+                        $display("[%0t] [Checker] POP OK source=%0d packet=0x%0h", $time, src, mon_tr.packet);
+                    end
 
+                    // SECOND PART: PUSH from the DUT match? 
+                    // In this part, the seq_items in the destination device are not in order, deppends on the DUT trafic and delay
+                    if (expected.broadcast) begin // Ask if the transaction accepted by the DUT was broadcast
+                        for (int i = 0; i < DRVRS; i++) begin
+                            if (BROADCAST_TO_SOURCE || (i != expected.source))
+                                exp_q[i].push_back(expected);
+                        end
+                    end
+                    else begin // Is not broadcast, then, unicast
+                        dst = expected.packet[7:0];
+                        if (dst >= DRVRS) begin
+                            $error("[%0t] [Checker] Invalid destination %0d", $time, dst);
+                            n_error++;
+                        end
+                        else begin
+                            exp_q[dst].push_back(expected);
+                        end
+                    end
+                MON_PUSH:
+                    
+                MON_RESET:
+                    
+                default:
+                    $warning("[%0t] [Checker] Unknown monitor event", $time);
+            endcase
+        end
     endtask
-
 endclass
