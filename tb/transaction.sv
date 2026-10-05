@@ -132,11 +132,25 @@ class trans_mon #(parameter int unsigned PCKG_SZ = 16);
 
 endclass
 
+typedef enum { SB_REPORT } sb_cmd_e;
+
 // From the sb to checker
-class trans_sb #();
-
-
-
-
+class trans_sb #(parameter int unsigned PCKG_SZ = 16);
+    int unsigned id;
+    int unsigned source;
+    bit [PCKG_SZ-1:0] packet;
+    bit broadcast;
+    time generation_time;
+    time pop_time; // This is filled by the checker when the DUT takes the packet -- latency calc
+ 
+    function new(int unsigned id, int unsigned source, bit [PCKG_SZ-1:0] packet,
+                 bit broadcast, time generation_time);
+        this.id = id;
+        this.source = source;
+        this.packet = packet;
+        this.broadcast = broadcast;
+        this.generation_time = generation_time;
+        this.pop_time = 0;
+    endfunction
 endclass
 
