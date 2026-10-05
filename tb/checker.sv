@@ -14,7 +14,8 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     // typedef bit [PCKG_SZ-1:0] pkt_t;
 
     // Sync packets received experiment
-    trans_sb_t exp_q [DRVRS][$]; // Testing: Packets take it by the DUT but not arrived yet
+    trans_sb_t exp_q [DRVRS][$]; // Seq items -- from DUT POP but not PUSH yet
+    trans_sb_t req_q [DRVRS][$]; // Seq items planned -- Send by Agent to scb
 
     // pkt_t expected [DRVRS][$];
 
@@ -22,6 +23,8 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     int unsigned n_req;
     int unsigned n_pop;
     int unsigned n_push;
+    int unsigned n_ok;
+    int unsigned n_error;
 
     function new(mon_mbx_t mon_chkr_mbx, scb_mbx_t scb_chkr_mbx);
         this.mon_chkr_mbx = mon_chkr_mbx;
@@ -30,11 +33,20 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
 
     task run();
         $display("[%0t] The Checker has been initialized", $time);
+        fork 
+            get_requests();
+            get_monitor_events();
+        join
+    endtask
 
+    // Manage seq items comming from Agent -> SCB -> Checker 
+    task get_requests();
 
+    endtask
 
+    // Manage seq items observed by the monitors
+    task get_monitor_events();
 
-        
     endtask
 
 endclass
