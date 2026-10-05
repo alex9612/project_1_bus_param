@@ -124,15 +124,17 @@ class trans_mon #(parameter int unsigned PCKG_SZ = 16);
     time event_time;
 
     function new(int unsigned device_id, mon_event_e event_type, bit [PCKG_SZ-1:0] packet = '0);
-        this.device_id  = device_id;
+        this.device_id = device_id;
         this.event_type = event_type;
-        this.packet     = packet;
+        this.packet = packet;
         this.event_time = $time;
     endfunction
 
 endclass
 
+// From the sb to checker
 class trans_sb #();
+
 
 
 
