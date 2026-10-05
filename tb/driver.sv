@@ -43,7 +43,7 @@ class driver #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bi
                     ->drv_done; // Top can count how many trans have been fetched
             end
             else begin
-                $info("[%0t] Driver [%0d] waiting for a transaction", $time, driver_id);
+                // $info("[%0t] Driver [%0d] waiting for a transaction", $time, driver_id); // So much noise printed
                     vif.pndng = 0;
                     vif.D_pop = 0;
             end
