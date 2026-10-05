@@ -25,12 +25,43 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     endfunction
 
     task run();
+        // trans_drv_t tr;
+        // trans_sb_t sb_tr;
+        // sb_cmd_e cmd;
+        $display("[%0t] The Scoreboard has been initialized", $time);
+
+        fork
+            get_transactions();
+            get_commands();
+        join
+    endtask
+    
+    task get_transactions();
         trans_drv_t tr;
         trans_sb_t sb_tr;
         sb_cmd_e cmd;
-        $display("[%0t] The Scoreboard has been initialized", $time);
 
         forever begin
+            agent_scb_mbx.get(tr);
+            sb_tr = new(tr.id, tr.source, tr.packet, tr.broadcast, tr.generation_time);
+            historial.push_back(sb_tr);
+
+            if (tr.broadcast) 
+                n_broadcast++;
+            else
+                n_unicast++;
+            
+            n_per_source //
+
+
+
+
+
+
+
+
+
+
             if (agent_scb_mbx.num() > 0) begin
                 agent_scb_mbx.get(tr);
                 sb_tr = new(tr.id, tr.source, tr.packet, tr.broadcast, tr.generation_time);
