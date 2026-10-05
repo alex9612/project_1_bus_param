@@ -103,11 +103,11 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     if (expected.broadcast) begin // Ask if the transaction accepted by the DUT was broadcast
                         for (int i = 0; i < DRVRS; i++) begin
                             if (i != expected.source)
-                                exp_q[i].push_back(expected);
+                                exp_q[i].push_back(expected); // Push the seq_item from broadcast in all queues for each device, excluding source
                         end
                     end
                     else begin // Is not broadcast, then, unicast
-                        dst = expected.packet[7:0];
+                        dst = expected.packet[PCKG_SZ-1:PCKG_SZ-9];
                         if (dst >= DRVRS) begin
                             $error("[%0t] [Checker] Invalid destination %0d", $time, dst);
                             n_error++;
