@@ -59,12 +59,12 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
         forever begin
             test_scb_mbx.get(cmd);
             case (cmd)
-                SB_REPORT: 
-                    report();
+                SB_REPORT: begin
                     $display("[%0t] [Scoreboard] Total=%0d Unicast=%0d Broadcast=%0d", $time, 
                                 historial.size(), n_unicast, n_broadcast);
                     foreach (n_per_source[i]) // Display at this point, the total trans send for each device. Maybe this is broken, Ill check later
                             $display("[Scoreboard] Device %0d sent %0d transactions", i, n_per_source[i]);
+                end
                 default:
                     $warning("[%0t] [Scoreboard] Unknown command received", $time);
             endcase

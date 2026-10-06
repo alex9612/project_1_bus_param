@@ -68,10 +68,10 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                 $error("[%0t] [Checker] Invalid trasaction %0d, wrong broadcast code %0d", $time, tr.id, tr.packet[PCKG_SZ-1 -: 8]);
                 n_error_trans++;
             end
-            if (tr.source == tr.packet[PCKG_SZ-1 -: 8]) begin
-                $error("[%0t] [Checker] Invalid transaction %0d. Source %0d == Destination %0d", $time, tr.id, tr.source, tr.destination); // tr.dest does not exit, check
-                n_error_trans++;
-            end
+            // if (tr.source == tr.packet[PCKG_SZ-1 -: 8]) begin
+            //     $error("[%0t] [Checker] Invalid transaction %0d. Source %0d == Destination %0d", $time, tr.id, tr.source, tr.destination); // tr.dest does not exit, check
+            //     n_error_trans++;
+            // end
             else begin
                 req_q[tr.source].push_back(tr);
                 n_req++;

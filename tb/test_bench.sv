@@ -51,7 +51,7 @@ module test_bench;
     wire [PCKG_SZ-1:0] dut_D_push[BITS-1:0][DRVRS-1:0];
 
     // Modports for drivers and monitor
-    typedef virtual bus_if #(.PCKG_SZ(PCKG_SZ)).driver driver_vif_t;
+    typedef virtual bus_if #(.DRVRS(DRVRS), .PCKG_SZ(PCKG_SZ)).driver driver_vif_t;
     typedef virtual bus_if #(DRVRS, PCKG_SZ).monitor monitor_vif_t;
 
     // Assigning 1 interface per driver/monitor

@@ -1,6 +1,6 @@
 
 class driver #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, parameter bit [7:0] BROADCAST_CODE = 8'hFF);
-    virtual bus_if #(.PCKG_SZ(PCKG_SZ)).driver vif;
+    virtual bus_if #(.DRVRS(DRVRS), .PCKG_SZ(PCKG_SZ)).driver vif;
     event drv_done;
 
     typedef trans_drv #(.DRVRS(DRVRS), .PCKG_SZ(PCKG_SZ), .BROADCAST_CODE(BROADCAST_CODE)) trans_agent_t;

@@ -9,7 +9,7 @@ class environment #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, paramet
     typedef trans_sb #(PCKG_SZ) trans_sb_t;
 
     // Match the virtual interface types currently declared in each component
-    typedef virtual bus_if #(.PCKG_SZ(PCKG_SZ)).driver driver_vif_t;
+    typedef virtual bus_if #(.DRVRS(DRVRS), .PCKG_SZ(PCKG_SZ)).driver driver_vif_t;
     typedef virtual bus_if #(DRVRS, PCKG_SZ).monitor monitor_vif_t;
 
     typedef driver #(DRVRS, PCKG_SZ, BROADCAST_CODE) driver_t;
