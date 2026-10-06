@@ -26,6 +26,10 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     // This is for a specific situation where 2 or more packets are exactly the same at the
     // same time, from dif sources. The checker cannot detect those situations but can flag them
     int unsigned n_duplicate_packets; 
+    int unsigned n_latency = 0;
+    time sum_latency = 0;
+    time min_latency = 0;
+    time max_latency = 0;
 
     function new(mon_mbx_t mon_chkr_mbx, scb_mbx_t scb_chkr_mbx);
         this.mon_chkr_mbx = mon_chkr_mbx;
@@ -50,8 +54,8 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     endtask
 
     // Manage seq items comming from Agent -> SCB -> Checker 
-    // Those are errors related with the generator and not capture before, not the DUT. 
-    // For example: Wrong source defined.
+    // Those are errors related with the generator and not capture before, not the DUT
+    // For example: Wrong source defined
     task get_requests();
         trans_sb_t tr;
         forever begin
@@ -101,6 +105,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     end
                     // Take and remove the oldest request
                     expected = req_q[src].pop_front();
+                    expected.pop_time = tr.event_time; // Start latency at the observed POP
                     // Compare what the monitor saw with what the Agent sent to the Driver and SCB
                     if (tr.packet !== expected.packet) begin
                         $error("[%0t] [Checker] POP mismatch source=%0d expected=0x%0h actual=0x%0h", $time, src, expected.packet, tr.packet);
@@ -140,7 +145,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     if (duplicate_found) begin
                         n_duplicate_packets++; // Count how many times a sequence of two identical transactions was detected 
                         $display("[%0t] [Checker] NOTICE: tr=%0d source=%0d packet=0x%0h matches another pending packet -- individual copies cannot be distinguished. Count=%0d",
-                                $time, expected.id, expected.source, expected.packet, n_duplicate_packets);
+                            $time, expected.id, expected.source, expected.packet, n_duplicate_packets);
                     end
                 end
                 MON_PUSH: begin
@@ -148,6 +153,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     int unsigned dst;
                     int unsigned match_idx;
                     bit found;
+                    time latency;
 
                     dst = tr.device_id;
                     n_push++;
@@ -175,8 +181,13 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                         end
                         else begin
                             expected = exp_q[dst][match_idx];
+                            latency = tr.event_time - expected.pop_time;
+                            if (n_latency == 0 || latency < min_latency) min_latency = latency;
+                            if (n_latency == 0 || latency > max_latency) max_latency = latency;
+                            n_latency++;
+                            sum_latency += latency;
                             exp_q[dst].delete(match_idx);
-                            $display("[%0t] [Checker] PUSH OK destination=%0d packet=0x%0h", $time, dst, tr.packet);
+                            $display("[%0t] [Checker] PUSH OK destination=%0d packet=0x%0h latency=%0t", $time, dst, tr.packet, latency);
                         end
                     end
                 end
@@ -190,7 +201,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     end
 
                     // Reset erases packets accepted into the DUT. Requests
-                    // not accepted yet remain in the drivers.
+                    // not accepted yet remain in the drivers
                     if (discarded != 0)
                         $display("[%0t] [Checker] RESET: discarded %0d pending deliveries", $time, discarded);
                 end
@@ -232,11 +243,13 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
         $display("[Checker] Pending requests=%0d Pending deliveries=%0d", pending_requests, pending_deliveries);
         $display("[Checker] Packets matching another pending packet=%0d", n_duplicate_packets);
         $display("[Checker] Total errors=%0d", total_errors);
+        if (n_latency != 0)
+            $display("[Checker] POP->PUSH latency: min=%0t avg=%0.2f ns max=%0t samples=%0d", min_latency, real'(sum_latency)/n_latency, max_latency, n_latency);
+        $display("[Checker] Identical pending packets use the first matching request; individual latencies can be ambiguous");
 
         if (total_errors == 0)
             $display("[Checker] PASS");
         else
             $display("[Checker] FAIL");
     endfunction
-
 endclass
