@@ -11,13 +11,9 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     mon_mbx_t mon_chkr_mbx;
     scb_mbx_t scb_chkr_mbx;
 
-    // typedef bit [PCKG_SZ-1:0] pkt_t;
-
     // Sync packets received experiment
-    trans_sb_t exp_q [DRVRS][$]; // Expected queue: Seq items -- from DUT POP but not PUSH yet
+    trans_sb_t exp_q [DRVRS][$]; // Expected queue: Seq items -- packets pending in device n
     trans_sb_t req_q [DRVRS][$]; // Requested queue: Seq items planned -- Send by Agent to scb
-
-    // pkt_t expected [DRVRS][$];
 
     // Counters
     int unsigned n_req;
@@ -27,9 +23,22 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     int unsigned n_error_trans; // Counts the errors related with the transactions generated
     int unsigned n_error_dut; // Counts the errors related with the DUT
 
+    // This is for a specific situation where 2 or more packets are exactly the same at the
+    // same time, from dif sources. The checker cannot detect those situations but can flag them
+    int unsigned n_duplicate_packets; 
+
     function new(mon_mbx_t mon_chkr_mbx, scb_mbx_t scb_chkr_mbx);
         this.mon_chkr_mbx = mon_chkr_mbx;
         this.scb_chkr_mbx = scb_chkr_mbx;
+    endfunction
+
+    // Flag 2 or more seq_items at the same time with the same content
+    function bit has_duplicate(int unsigned dst, trans_sb_t expected);
+        for (int i = 0; i < exp_q[dst].size(); i++) begin
+            if (exp_q[dst][i].packet === expected.packet)
+                return 1; // Returns a 1 if there is 
+        end
+        return 0;
     endfunction
 
     task run();
@@ -46,7 +55,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     task get_requests();
         trans_sb_t tr;
         forever begin
-            scb_chckr_mbx.get(tr);
+            scb_chkr_mbx.get(tr);
             if (tr.source >= DRVRS) begin
                 $error("[%0t] [Checker] Invalid source %0d", $time, tr.source);
                 n_error_trans++;
@@ -55,8 +64,8 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                 $error("[%0t] [Checker] Invalid trasaction %0d, wrong broadcast code %0d", $time, tr.id, tr.packet[PCKG_SZ-1 -: 8]);
                 n_error_trans++;
             end
-            if (if (tr.source == tr.packet[PCKG_SZ-1 -: 8])) begin
-                $error("[%0t] [Checker] Invalid transaction %0d. Source %0d == Destination %0d", $time, tr.id, tr.source, tr.destination);
+            if (tr.source == tr.packet[PCKG_SZ-1 -: 8]) begin
+                $error("[%0t] [Checker] Invalid transaction %0d. Source %0d == Destination %0d", $time, tr.id, tr.source, tr.destination); // tr.dest does not exit, check
                 n_error_trans++;
             end
             else begin
@@ -72,52 +81,69 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
         trans_mon_t tr;
         forever begin
             mon_chkr_mbx.get(tr);
-            case (tr.event_type) // Event observed in monitor
-                MON_POP:
+            case (tr.event_type)
+                MON_POP: begin
+                    // The DUT took a packet from this source. It may still be waiting for the bus
                     trans_sb_t expected;
                     int unsigned src;
                     int unsigned dst;
+                    bit duplicate_found;
 
-                    src = tr.device_id;
+                    src = tr.device_id; // The monitored device is the source
                     n_pop++;
                     
-                    // FIRST PART: POP from the DUT match? 
-                    // The checker was not expecting that seq item from this source based on the golden ref
+                    // FIRST PART: Was there a request waiting for this source?
+                    // req_q stores what the Agent requested, before the DUT takes it
                     if (req_q[src].size() == 0) begin
                         $error("[%0t] [Checker] Unexpected POP from device %0d packet=0x%0h", $time, src, tr.packet);
                         n_error_dut++;
-                        return;
+                        return; // This exits get_monitor_events()
                     end
-                    // First transaction waiting for this source
-                    expected = req_q[src].pop_front(); // POPs from the DUT are in order due the FIFO in the source device
-                    // Verify that what entered in the DUT is what the Agent sent to the Driver and SCB
+                    // Take and remove the oldest request
+                    expected = req_q[src].pop_front();
+                    // Compare what the monitor saw with what the Agent sent to the Driver and SCB
                     if (tr.packet !== expected.packet) begin
-                        $error("[%0t] [Checker] POP mismatch source=%0d expected=0x%0h actual=0x%0h", $time, src, expected.packet, mon_tr.packet);
+                        $error("[%0t] [Checker] POP mismatch source=%0d expected=0x%0h actual=0x%0h", $time, src, expected.packet, tr.packet);
                         n_error_dut++;
                     end
                     else begin
-                        $display("[%0t] [Checker] POP OK source=%0d packet=0x%0h", $time, src, mon_tr.packet);
+                        $display("[%0t] [Checker] POP OK source=%0d packet=0x%0h", $time, src, tr.packet);
                     end
 
-                    // SECOND PART: PUSH from the DUT match? 
-                    // In this part, the seq_items in the destination device are not in order, deppends on the DUT trafic and delay
-                    if (expected.broadcast) begin // Ask if the transaction accepted by the DUT was broadcast
+                    // SECOND PART: Register where this accepted packet must arrive
+                    // exp_q (expected queue) stores pending deliveries, not the actual PUSH events
+                    duplicate_found = 0; // Flag for this POP
+                    if (expected.broadcast) begin
                         for (int i = 0; i < DRVRS; i++) begin
-                            if (i != expected.source)
-                                exp_q[i].push_back(expected); // Push the seq_item from broadcast in all queues for each device, excluding source
+                            if (i != expected.source) begin
+                                if (has_duplicate(i, expected))
+                                    duplicate_found = 1; // Flags the previous seq_item was the same packet (same dest + payload)
+                                // Store the same object handle in each receivers queue
+                                exp_q[i].push_back(expected);
+                            end
                         end
                     end
-                    else begin // Is not broadcast, then, unicast
-                        dst = expected.packet[PCKG_SZ-1:PCKG_SZ-9];
+                    else begin // Unicast transaction
+                        dst = expected.packet[PCKG_SZ-1-:8];
                         if (dst >= DRVRS) begin
                             $error("[%0t] [Checker] Invalid destination %0d", $time, dst);
-                            n_error_dut++;
+                            n_error_trans++;
                         end
                         else begin
-                            exp_q[dst].push_back(expected);
+                            if (has_duplicate(dst, expected))
+                                duplicate_found = 1; // Flags the previous seq_item was the same packet (same dest + payload)
+                            exp_q[dst].push_back(expected); // After the duplicate validation, proceed to push_back the new seq_item
                         end
                     end
-                MON_PUSH:
+
+                    // This notice reports ambiguous identity -- it does not count as a DUT error
+                    if (duplicate_found) begin
+                        n_duplicate_packets++; // Count how many times a sequence of two identical transactions was detected 
+                        $display("[%0t] [Checker] NOTICE: tr=%0d source=%0d packet=0x%0h matches another pending packet -- individual copies cannot be distinguished. Count=%0d",
+                                $time, expected.id, expected.source, expected.packet, n_duplicate_packets);
+                    end
+                end
+                MON_PUSH: begin
                     trans_sb_t expected;
                     int unsigned dst;
                     int unsigned match_idx;
@@ -153,8 +179,21 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                             $display("[%0t] [Checker] PUSH OK destination=%0d packet=0x%0h", $time, dst, tr.packet);
                         end
                     end
-                MON_RESET:
+                end
+                MON_RESET: begin
+                    int unsigned discarded;
 
+                    discarded = 0;
+                    for (int i = 0; i < DRVRS; i++) begin
+                        discarded += exp_q[i].size();
+                        exp_q[i].delete();
+                    end
+
+                    // Reset erases packets accepted into the DUT. Requests
+                    // not accepted yet remain in the drivers.
+                    if (discarded != 0)
+                        $display("[%0t] [Checker] RESET: discarded %0d pending deliveries", $time, discarded);
+                end
                 default:
                     $warning("[%0t] [Checker] Unknown monitor event", $time);
             endcase
