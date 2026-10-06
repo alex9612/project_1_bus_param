@@ -43,6 +43,11 @@ class environment #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, paramet
         mon_chkr_mbx = new();
 
         for (int i = 0; i < DRVRS; i++) begin
+            // If an interface is not properly connected, stop the simulation
+            if (driver_vifs[i] == null)
+                $fatal(1, "[Environment] Driver interface %0d was not connected", i);
+            if (monitor_vifs[i] == null)
+                $fatal(1, "[Environment] Monitor interface %0d was not connected", i);
             agent_drv_mbx[i] = new();
             // Driver constructor params: id, agen_mbx
             drivers[i] = new(i, agent_drv_mbx[i]);
