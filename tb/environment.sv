@@ -65,13 +65,16 @@ class environment #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16, paramet
             agent.run();
             scb.run();
             chkr.run();
+        join_none
 
-            // Create a thread for each driver and monitor
-            for (int i = 0; i < DRVRS; i++) begin
-                automatic int id = i;
+        // Create a thread for each driver and monitor -- fixed
+        for (int i = 0; i < DRVRS; i++) begin
+            automatic int id = i;
+            fork
                 drivers[id].run();
                 monitors[id].run();
-            end
-        join_none
+            join_none
+        end
     endtask
+
 endclass
