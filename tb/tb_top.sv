@@ -29,7 +29,7 @@ module tb_top;
     localparam int PCKG_SZ = `PCKG_SZ;
     // Even though it has a broadcast parameter, RTL is hardcoded FF
     localparam bit [7:0] BROADCAST_CODE = 8'hFF;
-    localparam int RUN_CYCLES = 10000;
+    localparam int RUN_CYCLES = 500000;
 
     
     logic clk = 0;
