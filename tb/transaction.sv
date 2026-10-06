@@ -119,7 +119,7 @@ typedef enum {
 // From the monitor to checker
 class trans_mon #(parameter int unsigned PCKG_SZ = 16);
     int unsigned device_id;
-    mon_event_e event_type;
+    monitor_event_e event_type;
     bit [PCKG_SZ-1:0] packet;
     time event_time;
 
