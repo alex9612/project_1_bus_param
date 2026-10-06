@@ -199,4 +199,44 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
             endcase
         end
     endtask
+
+    // Ivoke from the test.sv
+    function void report();
+        int unsigned pending_requests;
+        int unsigned pending_deliveries;
+        int unsigned total_errors;
+
+        pending_requests = 0;
+        pending_deliveries = 0;
+
+        // Requests that were registered, but no POP was observed
+        foreach (req_q[s]) begin
+            foreach (req_q[s][j]) begin
+                pending_requests++;
+                $error("[Checker] Transaction %0d from device %0d was never taken by the DUT", req_q[s][j].id, s);
+            end
+        end
+
+        // Packets accepted by the DUT, but still waiting for delivery
+        foreach (exp_q[d]) begin
+            foreach (exp_q[d][j]) begin
+                pending_deliveries++;
+                $error("[Checker] Transaction %0d from device %0d never arrived at destination %0d", exp_q[d][j].id, exp_q[d][j].source, d);
+            end
+        end
+
+        total_errors = n_error_trans + n_error_dut + pending_requests + pending_deliveries;
+
+        $display("[Checker] Requests=%0d POPs=%0d PUSHs=%0d Matched=%0d", n_req, n_pop, n_push, n_ok);
+        $display("[Checker] Transaction errors=%0d DUT errors=%0d", n_error_trans, n_error_dut);
+        $display("[Checker] Pending requests=%0d Pending deliveries=%0d", pending_requests, pending_deliveries);
+        $display("[Checker] Packets matching another pending packet=%0d", n_duplicate_packets);
+        $display("[Checker] Total errors=%0d", total_errors);
+
+        if (total_errors == 0)
+            $display("[Checker] PASS");
+        else
+            $display("[Checker] FAIL");
+    endfunction
+
 endclass
