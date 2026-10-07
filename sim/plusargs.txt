@@ -1,0 +1,79 @@
+# Activate ONLY ONE complete block. Comment the current block before
+# uncommenting another: repeated plusarg keys do not define separate tests.
+# All settings are read by test.sv, not by driver or agent.
+# N/W are compile-time parameters selected in Bash, not runtime plusargs.
+# TOTAL_TRANS counts originals in the whole test, NOT packets per source.
+
+# 1.1 General: valid random traffic, random destinations and gaps.
++TOTAL_TRANS=100
++BROADCAST_WEIGHT=50
++MIN_GAP=0
++MAX_GAP=20
++PAYLOAD_MODE=RANDOM
+
+# Unicast only: also useful for random route exercise (part of 1.4).
+# +TOTAL_TRANS=100
+# +BROADCAST_WEIGHT=0
+# +MIN_GAP=0
+# +MAX_GAP=20
+# +PAYLOAD_MODE=RANDOM
+
+# 1.2 Switching activity: 0, 1, AA and 55, gap=1.
+# Pattern order is global; not guaranteed to alternate on each source.
+# +TOTAL_TRANS=100
+# +BROADCAST_WEIGHT=0
+# +MIN_GAP=1
+# +MAX_GAP=1
+# +PAYLOAD_MODE=SWITCHING
+
+# 1.3 Broadcast only: FF, with expected delivery to all except source.
+# +TOTAL_TRANS=100
+# +BROADCAST_WEIGHT=100
+# +MIN_GAP=0
+# +MAX_GAP=20
+# +PAYLOAD_MODE=RANDOM
+
+# 1.5 Short contention/burst: no requested gaps; sources remain random.
+# Does not select active sources or enforce grant order/fairness.
+# The plan's 1000 packets per source needs a longer simulation and controls.
+# +TOTAL_TRANS=100
+# +BROADCAST_WEIGHT=0
+# +MIN_GAP=0
+# +MAX_GAP=0
+# +PAYLOAD_MODE=RANDOM
+
+# 1.7 Available patterns under burst traffic. Walking bits and forced
+# repeated complete packets are not implemented in the current generator.
+# +TOTAL_TRANS=100
+# +BROADCAST_WEIGHT=0
+# +MIN_GAP=0
+# +MAX_GAP=0
+# +PAYLOAD_MODE=SWITCHING
+
+# 1.8 Random mixture under contention. Does not force U,U,B,B or another BC.
+# +TOTAL_TRANS=100
+# +BROADCAST_WEIGHT=50
+# +MIN_GAP=0
+# +MAX_GAP=0
+# +PAYLOAD_MODE=RANDOM
+
+# 1.9 Minimal traffic: one original (source is randomly selected).
+# +TOTAL_TRANS=1
+# +BROADCAST_WEIGHT=0
+# +MIN_GAP=0
+# +MAX_GAP=0
+# +PAYLOAD_MODE=RANDOM
+
+# 1.9 Minimal traffic: two originals, possibly from different sources.
+# +TOTAL_TRANS=2
+# +BROADCAST_WEIGHT=0
+# +MIN_GAP=0
+# +MAX_GAP=0
+# +PAYLOAD_MODE=RANDOM
+
+# 1.9 Sparse traffic / long source gaps. Does not force a global idle sequence.
+# +TOTAL_TRANS=4
+# +BROADCAST_WEIGHT=0
+# +MIN_GAP=500
+# +MAX_GAP=1000
+# +PAYLOAD_MODE=RANDOM
