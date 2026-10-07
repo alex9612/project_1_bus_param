@@ -7,13 +7,16 @@ use Cwd qw(abs_path);
 
 # Read only the existing log messages. No simulator plugin or Perl package
 # outside the standard installation is required
-my ($devices, $width, $unit, $help);
+my ($devices, $width, $unit, $help, $standard);
 GetOptions('devices=i' => \$devices, 'width=i' => \$width,
-           'unit=s' => \$unit, 'help' => \$help) or die "Invalid options\n";
+           'unit=s' => \$unit, 'help' => \$help,
+           'standard' => \$standard) or die "Invalid options\n";
 if ($help || !@ARGV) {
-    print "Usage: perl scripts/log_to_csv.pl [--devices N --width W --unit ps] run.log [packets.csv]\n";
+    print "Usage: perl sim/scripts/log_to_csv.pl [--standard] [--devices N --width W --unit ps] run.log [packets.csv]\n";
     print "N/W are read from config.txt beside the log when available.\n";
     print "--unit is required only if printed timestamps have no suffix.\n";
+    print "Default: Excel Spanish (semicolon separator, decimal comma).\n";
+    print "--standard: comma separator and decimal point for GNUplot.\n";
     exit($help ? 0 : 1);
 }
 my ($log, $csv) = @ARGV;
@@ -160,16 +163,25 @@ die "No recognizable packet messages in $log\n" unless @rows;
 my @columns = qw(transaction_id source destination receiver packet send_time_ns
                  receive_time_ns latency_ns gap_cycles status ambiguous input_matches_request);
 open my $output, '>', $csv or die "Cannot write $csv: $!\n";
-print {$output} join(',', @columns), "\n";
+binmode($output);
+my $separator = $standard ? ',' : ';';
+my $newline = $standard ? "\n" : "\r\n";
+# Excel reads this first line to select the delimiter on double-click.
+# Decimal comma matches the user's Spanish regional settings.
+print {$output} 'sep=;', $newline unless $standard;
+print {$output} join($separator, @columns), $newline;
 for my $row (@rows) {
     my @values;
     for my $column (@columns) {
         my $value = $row->{$column} // '';
-        $value = sprintf('%.6f', $value) if $column =~ /_ns$/ && $value ne '';
+        if ($column =~ /_ns$/ && $value ne '') {
+            $value = sprintf('%.6f', $value);
+            $value =~ s/\./,/ unless $standard;
+        }
         $value =~ s/"/""/g;
         push @values, '"' . $value . '"';
     }
-    print {$output} join(',', @values), "\n";
+    print {$output} join($separator, @values), $newline;
 }
 close $output;
 my $ambiguous = scalar grep { $_->{ambiguous} } @rows;
