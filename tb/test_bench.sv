@@ -27,7 +27,7 @@ module test_bench;
     localparam int PCKG_SZ = `PCKG_SZ;
     // Even though it has a broadcast parameter, RTL is hardcoded FF
     localparam bit [7:0] BROADCAST_CODE = 8'hFF;
-    localparam int RUN_CYCLES = 10000;
+    localparam int TIMEOUT_CYCLES = 500000;
 
     
     logic clk = 0;
@@ -90,6 +90,7 @@ module test_bench;
     initial begin
         environment #(DRVRS, PCKG_SZ, BROADCAST_CODE) env;
         test #(DRVRS) t0;
+        int unsigned expected_deliveries;
 
         // Defining timefortat so display %t values in ns
         $timeformat(-9, 1, " ns", 0);
@@ -110,9 +111,24 @@ module test_bench;
             t0.run();
         join_none
 
-        // "Run phase"
-        repeat (RUN_CYCLES) @(posedge clk);
+        @(negedge clk);
+        wait (env.chkr.n_req == t0.total_trans);
+        wait (env.chkr.n_pop == t0.total_trans);
+
+        // Unicast needs one reception -- broadcast needs one per device except source
+        expected_deliveries = env.scb.n_unicast + env.scb.n_broadcast * (DRVRS - 1);
+        wait (env.chkr.n_latency == expected_deliveries);
+
+        t0.finish();
+        @(negedge clk);
+        env.chkr.report();
         $display("[Top] Simulation finished");
         $finish;
+    end
+
+    // Independent safety limit: a missing packet must not leave wait blocked forever.
+    initial begin
+        repeat (TIMEOUT_CYCLES) @(posedge clk);
+        $fatal(1, "[Testbench] Timeout waiting for the test to finish");
     end
 endmodule
