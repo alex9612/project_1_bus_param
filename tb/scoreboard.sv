@@ -16,6 +16,7 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     trans_sb_t historial[$];   // Every transaction received
     int unsigned n_unicast; // Counts how many unicast have been generated
     int unsigned n_broadcast; // Counts how many broadcast have been generated
+    int unsigned n_invalid = 0;
     int unsigned n_per_source[DRVRS]; // Counts how many trans per source have been generated
 
     function new(agent_mbx_t agent_scb_mbx, chkr_mbx_t scb_chkr_mbx, test_mbx_t test_scb_mbx);
@@ -46,6 +47,8 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
             historial.push_back(sb_tr);
             if (tr.broadcast) 
                 n_broadcast++;
+            else if (tr.packet[PCKG_SZ-1 -: 8] >= DRVRS)
+                n_invalid++;
             else
                 n_unicast++;
             n_per_source[tr.source]++;
@@ -62,6 +65,7 @@ class scoreboard #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                 SB_REPORT: begin
                     $display("[%0t] [Scoreboard] Total=%0d Unicast=%0d Broadcast=%0d", $time, 
                                 historial.size(), n_unicast, n_broadcast);
+                    $display("[Scoreboard] Invalid destination originals=%0d", n_invalid);
                     foreach (n_per_source[i]) // Display at this point, the total trans send for each device. Maybe this is broken, Ill check later
                             $display("[Scoreboard] Device %0d sent %0d transactions", i, n_per_source[i]);
                 end

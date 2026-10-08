@@ -49,6 +49,7 @@ module test_bench;
     wire dut_pop[BITS-1:0][DRVRS-1:0];
     wire dut_push[BITS-1:0][DRVRS-1:0];
     wire [PCKG_SZ-1:0] dut_D_push[BITS-1:0][DRVRS-1:0];
+    wire tx_idle[DRVRS];
 
     // Modports for drivers and monitor
     typedef virtual bus_if #(.DRVRS(DRVRS), .PCKG_SZ(PCKG_SZ)).driver driver_vif_t;
@@ -66,6 +67,10 @@ module test_bench;
         assign bus_if_i[i].pop = dut_pop[0][i];
         assign bus_if_i[i].push = dut_push[0][i];
         assign bus_if_i[i].D_push = dut_D_push[0][i];
+        // POP happens before serial transmission. Observe the existing TX
+        // controller so invalid packets also finish before ending the test.
+        assign tx_idle[i] = !dut.BUS[0].ID[i].ntrfs.cntrl.bs_rqst
+                        && !dut.BUS[0].ID[i].ntrfs.cntrl.en_w;
 
         // Verification of the successfull connections is in the env
         initial begin
@@ -119,9 +124,14 @@ module test_bench;
         expected_deliveries = env.scb.n_unicast + env.scb.n_broadcast * (DRVRS - 1);
         wait (env.chkr.n_latency == expected_deliveries);
 
+        for (int i = 0; i < DRVRS; i++) wait (tx_idle[i]);
+        repeat (3) @(negedge clk); // Allow the last receiver state updates to be observed.
+
         t0.finish();
         @(negedge clk);
         env.chkr.report();
+        if (env.chkr.n_error_trans != 0 || env.chkr.n_error_dut != 0)
+            $fatal(1, "[Testbench] Checker reported errors");
         $display("[Top] Simulation finished");
         $finish;
     end

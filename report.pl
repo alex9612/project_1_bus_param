@@ -12,7 +12,7 @@ GetOptions('devices=i' => \$devices, 'width=i' => \$width,
            'unit=s' => \$unit, 'help' => \$help,
            'standard' => \$standard) or die "Invalid options\n";
 if ($help || !@ARGV) {
-    print "Usage: perl sim/scripts/log_to_csv.pl [--standard] [--devices N --width W --unit ps] run.log [packets.csv]\n";
+    print "Usage: perl report.pl [--standard] [--devices N --width W --unit ps] run.log [packets.csv]\n";
     print "N/W are read from config.txt beside the log when available.\n";
     print "--unit is required only if printed timestamps have no suffix.\n";
     print "Default: Excel Spanish (semicolon separator, decimal comma).\n";
@@ -105,8 +105,13 @@ while (my $line = <$input>) {
             $base{input_matches_request} = ($request->{packet} eq $base{packet}) ? 1 : 0;
         }
 
-        if ($port >= $devices || $dst eq '' || ($dst >= $devices && $dst != 255)) {
+        if ($port >= $devices || $dst eq '') {
             $base{status} = 'invalid_input';
+            push @rows, \%base;
+            next;
+        }
+        if ($dst >= $devices && $dst != 255) {
+            $base{status} = 'discard_expected';
             push @rows, \%base;
             next;
         }

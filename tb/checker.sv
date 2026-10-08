@@ -22,6 +22,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
     int unsigned n_ok;
     int unsigned n_error_trans; // Counts the errors related with the transactions generated
     int unsigned n_error_dut; // Counts the errors related with the DUT
+    int unsigned n_discard_expected = 0;
 
     // This is for a specific situation where 2 or more packets are exactly the same at the
     // same time, from dif sources. The checker cannot detect those situations but can flag them
@@ -64,7 +65,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                 $error("[%0t] [Checker] Invalid source %0d", $time, tr.source);
                 n_error_trans++;
             end
-            if (tr.broadcast && tr.packet[PCKG_SZ-1 -: 8] != BROADCAST_CODE) begin
+            else if (tr.broadcast && tr.packet[PCKG_SZ-1 -: 8] != BROADCAST_CODE) begin
                 $error("[%0t] [Checker] Invalid trasaction %0d, wrong broadcast code %0d", $time, tr.id, tr.packet[PCKG_SZ-1 -: 8]);
                 n_error_trans++;
             end
@@ -101,7 +102,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     if (req_q[src].size() == 0) begin
                         $error("[%0t] [Checker] Unexpected POP from device %0d packet=0x%0h", $time, src, tr.packet);
                         n_error_dut++;
-                        return; // This exits get_monitor_events()
+                        continue; // Keep checking later traffic after this error
                     end
                     // Take and remove the oldest request
                     expected = req_q[src].pop_front();
@@ -131,8 +132,10 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                     else begin // Unicast transaction
                         dst = expected.packet[PCKG_SZ-1-:8];
                         if (dst >= DRVRS) begin
-                            $error("[%0t] [Checker] Invalid destination %0d", $time, dst);
-                            n_error_trans++;
+                            // This is an intentional invalid address test
+                            n_discard_expected++;
+                            $display("[%0t] [Checker] DISCARD expected source=%0d destination=%0d",
+                                     $time, src, dst);
                         end
                         else begin
                             if (has_duplicate(dst, expected))
@@ -185,6 +188,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
                             if (n_latency == 0 || latency < min_latency) min_latency = latency;
                             if (n_latency == 0 || latency > max_latency) max_latency = latency;
                             n_latency++;
+                            n_ok++;
                             sum_latency += latency;
                             exp_q[dst].delete(match_idx);
                             $display("[%0t] [Checker] PUSH OK destination=%0d packet=0x%0h latency=%0t", $time, dst, tr.packet, latency);
@@ -243,6 +247,7 @@ class Checker #(parameter int DRVRS = 4, parameter int PCKG_SZ = 16,
         $display("[Checker] Pending requests=%0d Pending deliveries=%0d", pending_requests, pending_deliveries);
         $display("[Checker] Packets matching another pending packet=%0d", n_duplicate_packets);
         $display("[Checker] Total errors=%0d", total_errors);
+        $display("[Checker] Invalid originals accepted, expecting no delivery=%0d", n_discard_expected);
         if (n_latency != 0)
             $display("[Checker] POP->PUSH latency: min=%0t avg=%0.2f ns max=%0t samples=%0d", min_latency, real'(sum_latency)/n_latency, max_latency, n_latency);
         $display("[Checker] Identical pending packets use the first matching request; individual latencies can be ambiguous");
