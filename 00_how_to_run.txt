@@ -1,0 +1,55 @@
+
+Desde la raiz del proyecto:
+
+1. En plusargs.txt descomentar solo el bloque del caso de prueba.
+De igual forma se puede hacer correr las simulaciones, una vez compilado,
+ajustando los valores de las variables aceptadas por la prueba con el fin de
+desarrollar un nuevo caso de prueba.
+
+2. Compile el diseño mediante el script de bash comando.sh ajustando parámetros
+de compilación. Ejemplo 1:
+   N=4 W=16 mode=compile bash comando.sh
+
+   Ejemplo 2:
+   N=10 W=64 mode=compile bash comando.sh
+
+   Para compilar el diseño con N/W aleatorios:
+   MODO_PARAMETROS=random SEED=1 mode=compile bash comando.sh
+
+3. Una vez compilado, se puede ejecutar una sola prueba con un solo seed:
+N=4 W=16 mode=run SEED=1 bash comando.sh
+
+4. Para correr muchas semillas en una sola prueba, se corre la prueba con el
+script en bash de regression.sh. Ejemplo con 100 semillas:
+   N=4 W=16 bash regression.sh 100
+
+5. Para otra prueba, comente la prueba anterior y descomente la nueva prueba 
+en el file de plusargs.txt.
+
+RESULTADOS
+
+## Ubicación de directorios:
+
+Compilacion: build/n#_w#/compile.log
+Simulaciones: results/n#_w#/<nombre_simulacion>/*.log y *.csv
+
+
+## El script de simulación corre un script en perl que genera un .csv
+con los resultados de la simulación despues de PASS.
+
+## Generación del histograma:
+gnuplot -c histogram.gp results/n#_w#/<nombre_simulacion>/regression.csv
+mv histogram.png prueba_n#_w#.png
+
+Para correr VERDI modo debug:
+verdi -dbdir build/n#_w#/simv.daidir -ssf results/n#_w#/<nombre_simulacion>/waves.fsdb
+
+## Para limpiear las áreas:
+
+mode=clean bash comando.sh
+
+Nota: Borra todo results y conserva los ejecutables de build.
+
+Assertions y functional coverage WIP.
+
+
